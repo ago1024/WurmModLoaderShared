@@ -24,7 +24,6 @@ import java.util.logging.Logger;
 import org.gotti.wurmunlimited.modloader.classhooks.HookException;
 import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
 
-import javassist.ClassPool;
 import javassist.Loader;
 import javassist.NotFoundException;
 
@@ -81,6 +80,11 @@ class ModInstanceBuilder<T> {
 		String[] entries = classpath.split(",");
 		for (String entry : entries) {
 			Path modPath = Paths.get("mods", modname);
+			Path resolved = modPath.resolve(entry);
+			if (Files.exists(resolved) && !resolved.isAbsolute() && !modPath.relativize(resolved).startsWith("../")) {
+				pathEntries.add(resolved);
+				continue;
+			}
 
 			FileSystem fs = modPath.getFileSystem();
 			final PathMatcher matcher = fs.getPathMatcher("glob:" + entry);
@@ -128,9 +132,9 @@ class ModInstanceBuilder<T> {
 		logger.log(Level.INFO, "Classpath: " + pathEntries.toString());
 
 		if (shared) {
-			final ClassPool classPool = HookManager.getInstance().getClassPool();
+			final HookManager hookManager = HookManager.getInstance();
 			for (Path path : pathEntries) {
-				classPool.appendClassPath(path.toString());
+				hookManager.appendSharedClassPath(path);
 			}
 			return loader;
 		} else {

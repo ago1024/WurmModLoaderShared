@@ -7,9 +7,15 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.jar.Attributes;
@@ -37,6 +43,9 @@ public class HookManager {
 	// Javassist class loader
 	private Loader loader;
 
+	// classloaders for retrieving resources from mods with sharedClassLoader=true
+	private Map<URL, URLClassLoader> resourceClassLoaders;
+
 	// Invocation targets
 	private Map<String, InvocationTarget> invocationTargets = new HashMap<>();
 
@@ -50,8 +59,39 @@ public class HookManager {
 
 	private HookManager() {
 		classPool = ClassPool.getDefault();
+		resourceClassLoaders = new LinkedHashMap<>();
 		loader = new Loader(classPool) {
 			
+			@Override
+			public URL getResource(String name) {
+				URL url = getParent().getResource(name);
+				if (url == null) {
+					url = findResource(name);
+				}
+				return url;
+			}
+
+			@Override
+			protected URL findResource(String name) {
+				for (URLClassLoader urlClassLoader : resourceClassLoaders.values()) {
+					URL url = urlClassLoader.findResource(name);
+					if (url != null) {
+						return url;
+					}
+				}
+				return super.findResource(name);
+			}
+
+			@Override
+			protected Enumeration<URL> findResources(String name) throws IOException {
+				List<Enumeration<URL>> enumerations = new ArrayList<>();
+				enumerations.add(super.findResources(name));
+				for (URLClassLoader urlClassLoader : resourceClassLoaders.values()) {
+					enumerations.add(urlClassLoader.findResources(name));
+				}
+				return new CompoundEnumeration<>(enumerations);
+			}
+
 			@Override
 			protected Class<?> findClass(String name) throws ClassNotFoundException {
 				int index = name.lastIndexOf(".");
@@ -365,5 +405,11 @@ public class HookManager {
 	
 	public void initCallbacks() {
 		callbacks.init();
+	}
+
+	public void appendSharedClassPath(Path path) throws NotFoundException, MalformedURLException {
+		classPool.appendClassPath(path.toString());
+		final URL url = path.toUri().toURL();
+		resourceClassLoaders.putIfAbsent(url, new URLClassLoader(new URL[] { url }, this.getClass().getClassLoader()));
 	}
 }

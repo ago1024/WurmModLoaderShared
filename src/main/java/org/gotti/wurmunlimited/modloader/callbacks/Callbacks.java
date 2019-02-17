@@ -79,7 +79,7 @@ public class Callbacks {
 	 */
 	private Object initializeProxy(CtClass proxy, CtField targetField, Map<String, CtMethod> methods, Object callbackTarget) {
 		try {
-			Class<?> proxyClass = proxy.toClass();
+			Class<?> proxyClass = toClass(proxy);
 			Object proxyInstance = proxyClass.newInstance();
 			
 			for (Map.Entry<String, CtMethod> entry : methods.entrySet()) {
