@@ -7,6 +7,7 @@ import java.net.URLClassLoader;
 import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
@@ -80,10 +81,15 @@ class ModInstanceBuilder<T> {
 		String[] entries = classpath.split(",");
 		for (String entry : entries) {
 			Path modPath = Paths.get("mods", modname);
-			Path resolved = modPath.resolve(entry);
-			if (Files.exists(resolved) && !resolved.isAbsolute() && !modPath.relativize(resolved).startsWith("../")) {
-				pathEntries.add(resolved);
-				continue;
+			try {
+				Path resolved = modPath.resolve(entry);
+				if (Files.exists(resolved) && !resolved.isAbsolute() && !modPath.relativize(resolved).startsWith("../")) {
+					pathEntries.add(resolved);
+					continue;
+				}
+			} catch (InvalidPathException e) {
+				// Path.resolve does not like wildcards
+				// continue resolving the entries via glob
 			}
 
 			FileSystem fs = modPath.getFileSystem();

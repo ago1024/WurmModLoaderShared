@@ -51,4 +51,32 @@ public class ModInstanceBuilderTest {
 		ArrayList<URL> files = Collections.list(classLoader.getResources("test.txt"));
 		assertThat(files).containsExactly(jarUrl, fileUrl);
 	}
+	
+	@Test
+	public void testWildcard() throws ClassNotFoundException, IOException {
+		
+		ModInstanceBuilder<Object> instanceBuilder = new ModInstanceBuilder<>(Object.class);
+		
+		final String modName = "test";
+		
+		Properties properties = new Properties();
+		properties.setProperty("sharedClassLoader", Boolean.toString(false));
+		properties.setProperty("classname", "DummyMod");
+		properties.setProperty("classpath", "*.jar,files");
+		ModInfo modEntry = new ModInfo(properties, modName);
+
+		Object mod = instanceBuilder.createModInstance(modEntry);
+		
+		final Path modPath = Paths.get("mods").resolve(modName);
+		
+		final URL jarUrl = new URL("jar:" + modPath.resolve("test.jar").toUri().toString() + "!/test.txt");
+		final URL fileUrl = modPath.resolve("files/test.txt").toUri().toURL();
+
+		final ClassLoader classLoader = mod.getClass().getClassLoader();
+		assertThat(jarUrl).isNotNull();
+
+		ArrayList<URL> files = Collections.list(classLoader.getResources("test.txt"));
+		assertThat(files).containsExactly(jarUrl, fileUrl);
+	}
+	
 }
