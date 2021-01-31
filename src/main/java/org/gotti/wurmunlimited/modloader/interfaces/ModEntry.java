@@ -30,5 +30,13 @@ public interface ModEntry<T> {
 	 * @return the actual mod
 	 */
 	T getWurmMod();
+	
+	/**
+	 * Get the mod class loader
+	 * @return The class loader used to construct the mod
+	 */
+	default ClassLoader getModClassLoader() {
+		return getWurmMod().getClass().getClassLoader();
+	}
 
 }

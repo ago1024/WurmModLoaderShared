@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Properties;
 
+import org.gotti.wurmunlimited.modloader.interfaces.ModEntry;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -17,6 +19,7 @@ import org.junit.runner.RunWith;
 public class ModInstanceBuilderTest {
 	
 	@Test
+	@Ignore // Adding a resource to the shared class loader will make the resource available in other tests as well
 	public void testShared() throws ClassNotFoundException, IOException {
 		checkResources(true);
 	}
@@ -36,16 +39,14 @@ public class ModInstanceBuilderTest {
 		properties.setProperty("sharedClassLoader", Boolean.toString(sharedClassLoader));
 		properties.setProperty("classname", "DummyMod");
 		properties.setProperty("classpath", "test.jar,files");
-		ModInfo modEntry = new ModInfo(properties, modName);
-
-		Object mod = instanceBuilder.createModInstance(modEntry);
+		final ModEntry<?> entry = instanceBuilder.createModEntry(new ModInfo(properties, modName));
 		
-		final Path modPath = Paths.get("mods").resolve(modName);
+		final Path modPath = Paths.get("mods").resolve(entry.getName());
 		
 		final URL jarUrl = new URL("jar:" + modPath.resolve("test.jar").toUri().toString() + "!/test.txt");
 		final URL fileUrl = modPath.resolve("files/test.txt").toUri().toURL();
 
-		final ClassLoader classLoader = mod.getClass().getClassLoader();
+		final ClassLoader classLoader = entry.getModClassLoader();
 		assertThat(jarUrl).isNotNull();
 
 		ArrayList<URL> files = Collections.list(classLoader.getResources("test.txt"));
@@ -63,16 +64,14 @@ public class ModInstanceBuilderTest {
 		properties.setProperty("sharedClassLoader", Boolean.toString(false));
 		properties.setProperty("classname", "DummyMod");
 		properties.setProperty("classpath", "*.jar,files");
-		ModInfo modEntry = new ModInfo(properties, modName);
-
-		Object mod = instanceBuilder.createModInstance(modEntry);
+		ModEntry<?> entry = instanceBuilder.createModEntry(new ModInfo(properties, modName));
 		
-		final Path modPath = Paths.get("mods").resolve(modName);
+		final Path modPath = Paths.get("mods").resolve(entry.getName());
 		
 		final URL jarUrl = new URL("jar:" + modPath.resolve("test.jar").toUri().toString() + "!/test.txt");
 		final URL fileUrl = modPath.resolve("files/test.txt").toUri().toURL();
 
-		final ClassLoader classLoader = mod.getClass().getClassLoader();
+		final ClassLoader classLoader = entry.getModClassLoader();
 		assertThat(jarUrl).isNotNull();
 
 		ArrayList<URL> files = Collections.list(classLoader.getResources("test.txt"));

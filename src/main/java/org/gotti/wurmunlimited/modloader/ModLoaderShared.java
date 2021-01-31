@@ -43,16 +43,23 @@ public abstract class ModLoaderShared<T extends Versioned> implements Versioned 
 	
 	private class Entry extends ModInfo implements ModEntry<T> {
 		
-		T mod;
+		private final ModEntry<T> entry;
+		private final T mod;
 		
-		public Entry(T mod, Properties properties, String name) {
-			super(properties, name);
-			this.mod = mod;
+		public Entry(ModEntry<T> entry) {
+			super(entry.getProperties(), entry.getName());
+			this.entry = entry;
+			this.mod = entry.getWurmMod();
 		}
 		
 		@Override
 		public T getWurmMod() {
-			return mod;
+			return entry.getWurmMod();
+		}
+		
+		@Override
+		public ClassLoader getModClassLoader() {
+			return entry.getModClassLoader();
 		}
 	}
 	
@@ -138,7 +145,7 @@ public abstract class ModLoaderShared<T extends Versioned> implements Versioned 
 		List<Entry> mods = new DependencyResolver<ModInfo>().provided(Collections.singleton(modLoaderProvided)).order(unorderedMods).stream().map(modInfo -> {
 			try (EarlyLoadingChecker c = EarlyLoadingChecker.init(modInfo.getName(), "load")) {
 				modInfo.getProperties().put("steamVersion", steamVersion);
-				return new Entry(entryBuilder.createModInstance(modInfo), modInfo.getProperties(), modInfo.getName());
+				return new Entry(entryBuilder.createModEntry(modInfo));
 			}
 		}).collect(Collectors.toList());
 		

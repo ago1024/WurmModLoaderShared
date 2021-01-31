@@ -47,12 +47,12 @@ public class HookManagerCallbackApiTest {
 		final String modName = "test";
 
 		Properties properties = new Properties();
-		properties.setProperty("sharedClassLoader", "true");
+		properties.setProperty("sharedClassLoader", "false");
 		properties.setProperty("classname", CallbackApiMod.class.getName());
 		properties.setProperty("classpath", "test.jar,files");
 		ModInfo modEntry = new ModInfo(properties, modName);
 
-		instanceBuilder.createModInstance(modEntry);
+		instanceBuilder.createModEntry(modEntry);
 
 		Assertions.assertThat(new CallbackApiTarget().test()).isTrue();
 	}

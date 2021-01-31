@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 
 import org.gotti.wurmunlimited.modloader.classhooks.HookException;
 import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
+import org.gotti.wurmunlimited.modloader.interfaces.ModEntry;
 
 import javassist.Loader;
 import javassist.NotFoundException;
@@ -43,8 +44,12 @@ class ModInstanceBuilder<T> {
 	public ModInstanceBuilder(Class<? extends T> modClass) {
 		this.modClass = modClass;
 	}
-
+	
 	T createModInstance(ModInfo entry) {
+		return createModEntry(entry).getWurmMod();
+	}
+	
+	ModEntry<T> createModEntry(ModInfo entry) {
 
 		Properties properties = entry.getProperties();
 		String modInfo = entry.getName();
@@ -69,7 +74,29 @@ class ModInstanceBuilder<T> {
 				classloader = loader;
 			}
 
-			return classloader.loadClass(className).asSubclass(modClass).newInstance();
+			T mod = classloader.loadClass(className).asSubclass(modClass).newInstance();
+
+			return new ModEntry<T>() {
+				@Override
+				public String getName() {
+					return entry.getName();
+				}
+
+				@Override
+				public Properties getProperties() {
+					return entry.getProperties();
+				}
+
+				@Override
+				public T getWurmMod() {
+					return mod;
+				}
+
+				@Override
+				public ClassLoader getModClassLoader() {
+					return classloader;
+				}
+			};
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NotFoundException | MalformedURLException e) {
 			throw new HookException(e);
 		}
