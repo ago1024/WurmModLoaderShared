@@ -78,4 +78,34 @@ public class ModInstanceBuilderTest {
 		assertThat(files).containsExactly(jarUrl, fileUrl);
 	}
 	
+	@Test
+	public void testImportWithoutClassPath() throws IOException {
+		
+		ModInstanceBuilder<Object> instanceBuilder = new ModInstanceBuilder<>(Object.class);
+		
+		Properties properties = new Properties();
+		properties.setProperty("sharedClassLoader", Boolean.toString(false));
+		properties.setProperty("classname", "DummyMod");
+		properties.setProperty("classpath", "*.jar,files");
+		instanceBuilder.createModEntry(new ModInfo(properties, "test"));
+		
+		properties = new Properties();
+		properties.setProperty("sharedClassLoader", Boolean.toString(false));
+		properties.setProperty("classname", "DummyMod");
+		properties.setProperty("depend.requires","test");
+		properties.setProperty("depend.import", "test");
+		ModEntry<?> test2Mod = instanceBuilder.createModEntry(new ModInfo(properties, "test2"));
+		
+		
+		final Path modPath = Paths.get("mods").resolve("test");
+		
+		final URL jarUrl = new URL("jar:" + modPath.resolve("test.jar").toUri().toString() + "!/test.txt");
+		final URL fileUrl = modPath.resolve("files/test.txt").toUri().toURL();
+
+		final ClassLoader classLoader = test2Mod.getModClassLoader();
+		assertThat(jarUrl).isNotNull();
+
+		ArrayList<URL> files = Collections.list(classLoader.getResources("test.txt"));
+		assertThat(files).containsExactly(jarUrl, fileUrl);
+	}
 }

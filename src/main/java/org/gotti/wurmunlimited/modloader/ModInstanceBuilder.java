@@ -63,9 +63,9 @@ class ModInstanceBuilder<T> {
 			final String classpath = properties.getProperty("classpath");
 
 			final ClassLoader classloader;
-			if (classpath != null) {
+			final ClassLoader[] dependencies = entry.getImport().stream().map(classLoaders::get).filter(Objects::nonNull).toArray(ClassLoader[]::new);
+			if (classpath != null || dependencies.length > 0) {
 				final Boolean sharedClassLoader = Boolean.valueOf(properties.getProperty("sharedClassLoader", "false"));
-				ClassLoader[] dependencies = entry.getImport().stream().map(classLoaders::get).filter(Objects::nonNull).toArray(ClassLoader[]::new);
 				classloader = createClassLoader(entry.getName(), classpath, loader, sharedClassLoader, dependencies);
 				if (!sharedClassLoader) {
 					classLoaders.put(entry.getName(), classloader);
@@ -161,7 +161,7 @@ class ModInstanceBuilder<T> {
 	 * @throws NotFoundException
 	 */
 	private ClassLoader createClassLoader(String modname, String classpath, Loader loader, Boolean shared, ClassLoader... dependencies) throws MalformedURLException, NotFoundException {
-		List<Path> pathEntries = getClassLoaderEntries(modname, classpath);
+		List<Path> pathEntries = classpath == null ? new ArrayList<>() : getClassLoaderEntries(modname, classpath);
 		logger.log(Level.INFO, "Classpath: " + pathEntries.toString());
 
 		if (shared) {
